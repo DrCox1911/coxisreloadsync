@@ -1,0 +1,1032 @@
+--***********************************************************
+--**              LEMMY/ROBERT JOHNSON                     **
+--**            Screen with all our options                **
+--***********************************************************
+
+require "ISUI/ISPanelJoypad"
+require "ISUI/ISButton"
+require "ISUI/ISVolumeControl"
+
+require "defines"
+
+MainOptions = ISPanelJoypad:derive("MainOptions");
+
+MainOptions.keys = {};
+MainOptions.keyText = {};
+MainOptions.keyPress = nil;
+MainOptions.alreadySetKeyName = nil;
+MainOptions.alreadySetKeyValue = nil;
+MainOptions.keyBindingLength = 0;
+
+function MainOptions:initialise()
+	ISPanelJoypad.initialise(self);
+end
+
+
+--************************************************************************--
+--** ISPanel:instantiate
+--**
+--************************************************************************--
+function MainOptions:instantiate()
+	self.javaObject = UIElement.new(self);
+	self.javaObject:setX(self.x);
+	self.javaObject:setY(self.y);
+	self.javaObject:setHeight(self.height);
+	self.javaObject:setWidth(self.width);
+	self.javaObject:setAnchorLeft(self.anchorLeft);
+	self.javaObject:setAnchorRight(self.anchorRight);
+	self.javaObject:setAnchorTop(self.anchorTop);
+	self.javaObject:setAnchorBottom(self.anchorBottom);
+end
+
+
+
+function MainOptions:LanguageChange(box)
+if box.options[box.selected] ~= nil then
+    for i=0, Translator.getAvailableLanguage():size()-1 do
+        if Translator.getAvailableLanguage():get(i):text() == box.options[box.selected] then
+            Translator.setLanguage(Translator.getAvailableLanguage():get(i):index());
+        end
+    end
+end
+end
+
+
+function MainOptions:ModelsChange(box)
+if box.options[box.selected] ~= nil then
+	if box.selected == 1 then
+		getPerformance():setModelsEnabled(false)
+	else
+		getPerformance():setModelsEnabled(true)
+		getPerformance():setModels(box.selected-2)
+	end
+end
+end
+
+function MainOptions:ChangeCorpses(box)
+    if box.options[box.selected] ~= nil then
+        getPerformance():setCorpses3D(box.selected == 1);
+    end
+end
+
+function MainOptions:ChangeLighting(box)
+    if box.options[box.selected] ~= nil then
+        getPerformance():setLightingQuality(box.selected-1);
+    end
+end
+
+function MainOptions:ChangeLightFPS(box)
+    if box.options[box.selected] ~= nil then
+		-- handle (RECOMMENDED)
+		local s = box.options[box.selected]
+		local v = s:split(' ')
+        getPerformance():setLightingFPS(tonumber(v[1]));
+    end
+end
+
+function MainOptions:FramerateChange(box)
+    if box.options[box.selected] ~= nil then
+        getCore():setFramerate(box.selected);
+    end
+end
+
+function MainOptions:ChangeVSync(box)
+    if box.options[box.selected] ~= nil then
+        getCore():setOptionVSync(box.selected == 1);
+    end
+end
+
+function MainOptions:MultiThreadChange(box)
+    if box.options[box.selected] ~= nil then
+        getCore():setMultiThread(box.selected == 1);
+    end
+end
+function MainOptions:VidMemChange(box)
+if box.options[box.selected] ~= nil then
+getCore():setVidMem(box.selected);
+end
+end
+
+function MainOptions:ShadersChange(box)
+	if box.options[box.selected] ~= nil then
+		getCore():setUseShaders(box.selected == 1);
+        if MainScreen.instance.inGame then
+			getCore():shadersOptionChanged()
+        end
+	end
+end
+
+function MainOptions:FullscreenChange(box)
+if box.options[box.selected] ~= nil then
+    getCore():setWindowed(box.selected == 1);
+end
+end
+
+function MainOptions:ResolutionChange(box)
+	if box.options[box.selected] ~= nil then
+		-- handle (RECOMMENDED)
+		local s = box.options[box.selected]
+		local x, y = string.match(s, '(%d+) x (%d+)')
+		getCore():setResolution(x .. "x" .. y);
+	end
+end
+function MainOptions:ZoomChange(box)
+    if box.options[box.selected] ~= nil then
+        getCore():setOptionZoom(box.selected == 1);
+        if MainScreen.instance.inGame then
+			getCore():zoomOptionChanged()
+        end
+    end
+end
+
+function MainOptions:AutoZoomChange(index, selected)
+	getCore():setAutoZoom(index - 1, selected)
+end
+
+function MainOptions:InventoryFontChange(box)
+	if box.options[box.selected] ~= nil then
+		local choices = { "Large", "Medium", "Small" }
+		getCore():setOptionInventoryFont(choices[box.selected])
+		if MainScreen.instance.inGame then
+			ISInventoryPage.onInventoryFontChanged()
+		end
+	end
+end
+
+function MainOptions:ClockFormatChange(box)
+	getCore():setOptionClockFormat(box.selected)
+end
+
+function MainOptions:Clock24HourChange(box)
+	getCore():setOptionClock24Hour(box.selected == 1)
+end
+
+function MainOptions:ChangeSoundVolume(ctrl, volume)
+	getCore():setOptionSoundVolume(volume)
+end
+
+function MainOptions:ChangeMusicVolume(ctrl, volume)
+	getCore():setOptionMusicVolume(volume)
+end
+
+function MainOptions:ChangeMusicLibrary(box)
+    if box.options[box.selected] ~= nil then
+        getCore():setOptionMusicLibrary(box.selected)
+    end
+end
+
+function MainOptions:ChangeHeartVolume(ctrl, volume)
+	getCore():setOptionHeartVolume(volume)
+end
+
+function MainOptions:ControllerChange(index, selected)
+	getCore():setOptionActiveController(index - 1, selected)
+end
+
+function MainOptions:ControllerReload(button)
+	reloadControllerConfigFiles()
+end
+
+--> Stormy
+function MainOptions:DifficultyChange(box)
+	if(box.options[box.selected] ~= nil) then
+		--getCore():setOptionReloadDifficulty(box.selected)
+		--self.reloadLabel.name = ReloadManager[1]:getDifficultyDescription(box.selected):gsub("\\n", "\n");
+	end
+end
+-->> Stormy
+
+function MainOptions:ChangeRackProgress(box)
+	if box.options[box.selected] then
+		getCore():setOptionRackProgress(box.selected == 1)
+	end
+end
+
+function MainOptions:addCombo(x, y, w, h, name, options, selected, target, onchange)
+
+	local label = ISLabel:new(x, y + self.addY, h, name, 1, 1, 1, 1, UIFont.Small);
+	label:initialise();
+	self.mainPanel:addChild(label);
+	local panel2 = ISComboBox:new(x+20, y + self.addY + 2, w, h, target, onchange);
+	panel2:initialise();
+
+	for i, k in ipairs(options) do
+		panel2:addOption(k);
+	end
+
+	panel2.selected = selected;
+	self.mainPanel:addChild(panel2);
+	self.mainPanel:insertNewLineOfButtons(panel2)
+	self.addY = self.addY + 26;
+	return panel2;
+end
+
+function MainOptions:addSpinBox(x, y, w, h, name, options, selected, target, onchange)
+	local label = ISLabel:new(x, y + self.addY, h, name, 1, 1, 1, 1, UIFont.Small);
+	label:initialise();
+	self.mainPanel:addChild(label);
+	local panel2 = ISSpinBox:new(x+20, y + self.addY + 2, w, h, target, onchange);
+	panel2:initialise();
+
+	for i, k in ipairs(options) do
+		panel2:addOption(k);
+	end
+
+	panel2.selected = selected;
+	panel2.default = selected;
+	self.mainPanel:addChild(panel2);
+	self.mainPanel:insertNewLineOfButtons(panel2.leftButton, panel2.rightButton)
+	self.addY = self.addY + 26;
+	return panel2;
+end
+
+function MainOptions:addVolumeControl(x, y, w, h, name, volume, target, onchange)
+	local label = ISLabel:new(x, y + self.addY, h, name, 1, 1, 1, 1, UIFont.Small);
+	label:initialise();
+	self.mainPanel:addChild(label);
+	local panel2 = ISVolumeControl:new(x+20, y + self.addY + 2, w, h, target, onchange);
+	panel2:initialise();
+	panel2:setVolume(volume)
+
+	panel2.selected = selected;
+	panel2.default = selected;
+	self.mainPanel:addChild(panel2);
+	self.mainPanel:insertNewLineOfButtons(panel2)
+	self.addY = self.addY + 26;
+	return panel2;
+end
+
+function MainOptions:addPage(name)
+	self.mainPanel = ISPanelJoypad:new(0, 48, self:getWidth(), self:getHeight() - (48 * 2) - self.tabs.tabHeight)
+	self.mainPanel:initialise()
+	self.mainPanel:instantiate()
+	self.mainPanel:setAnchorRight(true)
+	self.mainPanel:setAnchorLeft(true)
+	self.mainPanel:setAnchorTop(true)
+	self.mainPanel:setAnchorBottom(true)
+	self.mainPanel:noBackground()
+	self.mainPanel.borderColor = {r=0, g=0, b=0, a=0};
+	self.mainPanel:setScrollChildren(true)
+	
+	self.mainPanel.onJoypadDown = MainOptions.onJoypadDownCurrentTab
+	self.mainPanel.onGainJoypadFocus = MainOptions.onGainJoypadFocusCurrentTab
+
+	-- rerouting the main panel's pre / render functions so we can add in the stencil stuff there...
+	self.mainPanel.render = MainOptions.subPanelRender
+	self.mainPanel.prerender = MainOptions.subPanelPreRender
+
+	self.mainPanel:addScrollBars();
+	self.tabs:addView(name, self.mainPanel)
+end
+
+-- THESE TWO ARE ACTUALLY self.mainPanel's new render / prerender functions...
+--
+function MainOptions:subPanelPreRender()
+    self:setStencilRect(0,0,self:getWidth(),self:getHeight());
+
+    ISPanelJoypad.prerender(self);
+end
+
+function MainOptions:subPanelRender()
+    ISPanelJoypad.render(self);
+    self:clearStencilRect();
+end
+---------------------------------------------------------------------------------------------
+
+function MainOptions:create()
+
+	local y = 20;
+    -- stay away from statics :)
+    MainOptions.keyText = {}
+    MainOptions.keyText = {};
+    MainOptions.keyPress = nil;
+    MainOptions.alreadySetKeyName = nil;
+    MainOptions.alreadySetKeyValue = nil;
+    MainOptions.keyBindingLength = 0;
+
+	self.tabs = ISTabPanel:new(0, 48, self.width, self.height - 48 * 2);
+	self.tabs:initialise();
+	self.tabs:setAnchorBottom(true);
+	self.tabs:setAnchorRight(true);
+--	self.tabs.borderColor = { r = 0, g = 0, b = 0, a = 0};
+--	self.tabs.onActivateView = ISCraftingUI.onActivateView;
+	self.tabs.target = self;
+	self.tabs:setEqualTabWidth(false)
+	self.tabs.tabPadX = 40
+	self.tabs:setCenterTabs(true)
+--	self.tabs.tabHeight = self.tabs.tabHeight + 12
+	self:addChild(self.tabs);
+
+	self.backButton = ISButton:new(16, self.height-30, 100, 25, getText("UI_btn_back"), self, MainOptions.onOptionMouseDown);
+	self.backButton.internal = "BACK";
+	self.backButton:initialise();
+	self.backButton:instantiate();
+	self.backButton:setAnchorLeft(true);
+	self.backButton:setAnchorTop(false);
+	self.backButton:setAnchorBottom(true);
+	self.backButton.borderColor = {r=1, g=1, b=1, a=0.1};
+	self.backButton:setFont(UIFont.Small);
+	self.backButton:ignoreWidthChange();
+	self.backButton:ignoreHeightChange();
+	self:addChild(self.backButton);
+
+	self.saveButton = ISButton:new(self.width - 116, self.height-30, 100, 25, getText("UI_btn_save"), self, MainOptions.onOptionMouseDown);
+	self.saveButton.internal = "SAVE";
+	self.saveButton:initialise();
+	self.saveButton:instantiate();
+	self.saveButton:setAnchorRight(true);
+	self.saveButton:setAnchorLeft(false);
+	self.saveButton:setAnchorTop(false);
+	self.saveButton:setAnchorBottom(true);
+	self.saveButton.borderColor = {r=1, g=1, b=1, a=0.1};
+	self.saveButton:setFont(UIFont.Small);
+	self.saveButton:ignoreWidthChange();
+	self.saveButton:ignoreHeightChange();
+	self:addChild(self.saveButton);
+
+	local lbl = ISLabel:new((self.width / 2) - (getTextManager():MeasureStringX(UIFont.Medium, getText("UI_optionscreen_gameoption")) / 2), 10, 30, getText("UI_optionscreen_gameoption"), 1, 1, 1, 1, UIFont.Medium, true);
+	lbl:initialise();
+	self:addChild(lbl);
+
+	self:addPage(getText("UI_optionscreen_display"))
+
+	----- FULLSCREEN -----
+	local modes = getCore():getScreenModes();
+
+	table.sort(modes, MainOptions.sortModes);
+	local splitpoint = self:getWidth() / 3;
+	local comboWidth = self:getWidth()-splitpoint - 100
+	local comboWidth = 300
+	local full = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_fullscreen"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.FullscreenChange);
+
+	if getCore():isFullScreen() then
+		full.selected = 1;
+	else
+		full.selected = 2;
+	end
+
+	----- VSYNC -----
+	local vsync = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_vsync"), {getText("UI_Yes"), getText("UI_No")}, 2, self, MainOptions.ChangeVSync)
+	if getCore():getOptionVSync() then
+		vsync.selected = 1
+	else
+		vsync.selected = 2
+	end
+
+	----- MULTICORE -----
+	local map = {};
+	map["defaultTooltip"] = getText("UI_optionscreen_needreboot");
+
+    local multithread;
+
+    multithread = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_multicore"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.MultiThreadChange);
+
+    multithread:setToolTipMap(map);
+
+    if getCore():isMultiThread() then
+        multithread.selected = 1;
+    else
+        multithread.selected = 2;
+    end
+
+	----- SHADERS -----
+    local shader;
+	shader = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_shaders"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.ShadersChange);
+
+--    if  getCore():supportsFBO() and getCore():loadedShader() then
+--        shader = self:addCombo(splitpoint, y, self:getWidth()-splitpoint - 100, 20, getText("UI_optionscreen_shaders"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.ShadersChange);
+--    else
+--        shader = self:addCombo(splitpoint, y, self:getWidth()-splitpoint - 100, 20, getText("UI_optionscreen_shaders"), {getText("UI_optionscreen_shadersunsupported")}, 1, self, nil);
+--    end
+
+    if getCore():getUseShaders() then -- or not getCore():supportsFBO() or not getCore():loadedShader() then
+        shader.selected = 1;
+    else
+        shader.selected = 2;
+    end
+
+	----- RESOLUTION -----
+	for i=1,#modes do
+		if modes[i] == "1280 x 720" then
+			modes[i] = modes[i] .. " (" .. getText("UI_optionscreen_recommended") .. ")"
+			break
+		end
+	end
+    local res = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_resolution"), modes, 1, self, MainOptions.ResolutionChange);
+
+	local w = getCore():getScreenWidth();
+	local h = getCore():getScreenHeight();
+    if w == 1280 and h == 720 then
+        res:select(w.." x "..h.. " (" .. getText("UI_optionscreen_recommended") .. ")");
+    else
+
+	    res:select(w.." x "..h);
+    end
+
+
+	----- 3D MODELS -----
+    local newmodels = nil;
+
+    if getPerformance():getSupports3D() then
+        newmodels = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_3DModels"), {getText("UI_optionscreen_None"), getText("UI_optionscreen_PlayerOnly"), getText("UI_optionscreen_Player") .. " +1", getText("UI_optionscreen_Player") .. " +2", getText("UI_optionscreen_Player") .. " +3", getText("UI_optionscreen_Player") .. " +4", getText("UI_optionscreen_Player") .. " +5", getText("UI_optionscreen_Player") .. " +8", getText("UI_optionscreen_Player") .. " +10", getText("UI_optionscreen_Player") .. " +20", getText("UI_optionscreen_All")  }, 1, self, MainOptions.ModelsChange);
+        if getPerformance():getModelsEnabled() then
+            newmodels.selected = getPerformance():getModels()+2
+        else
+            newmodels.selected = 1
+        end
+    else
+        newmodels = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_3DModels"), {getText("UI_optionscreen_NotSupportedByHardware")}, 1, self, MainOptions.ModelsChange);
+        getPerformance():setModelsEnabled(false)
+    end
+
+    ----- 3D CORPSES -----
+	local corpses = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_corpses"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.ChangeCorpses)
+	corpses.selected = getPerformance():getCorpses3D() and 1 or 2
+
+	----- FRAMERATE -----
+    local framerate = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_framerate"), {"60", "45", "30 (" .. getText("UI_optionscreen_recommended") .. ")"}, 1, self, MainOptions.FramerateChange);
+
+    local frame = getPerformance():getFramerate();
+    if frame == 60 then
+        framerate.selected = 1;
+    elseif frame == 45 then
+        framerate.selected = 2;
+    elseif frame == 30 then
+        framerate.selected = 3;
+    end
+
+	----- LIGHTING QUALITY -----
+    local lighting = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_lighting"), {getText("UI_High"), getText("UI_Medium"), getText("UI_Low"), getText("UI_Lowest")}, 1, self, MainOptions.ChangeLighting);
+    local light = getPerformance():getLightingQuality();
+    lighting.selected = light + 1;
+
+	----- LIGHTING FPS -----
+	local fps = getPerformance():getLightingFPS()
+	local selected = 3
+	if fps == 5 then selected = 1 end
+	if fps == 10 then selected = 2 end
+	if fps == 15 then selected = 3 end
+	if fps == 20 then selected = 4 end
+	if fps == 25 then selected = 5 end
+	if fps == 30 then selected = 6 end
+	if fps == 45 then selected = 7 end
+	if fps == 60 then selected = 8 end
+    local combo = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_lighting_fps"), {'5', '10', '15 (' .. getText("UI_optionscreen_recommended") .. ')', '20', '25', '30', '45', '60'}, selected, self, MainOptions.ChangeLightFPS)
+    map = {}
+	map["defaultTooltip"] = getText("UI_optionscreen_lighting_fps_tt")
+	combo:setToolTipMap(map)
+
+	----- ZOOM ON/OFF -----
+    local zoom = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_zoom"), {getText("UI_Yes"), getText("UI_No")}, 1, self, MainOptions.ZoomChange)
+    if getCore():getOptionZoom() then
+		zoom.selected = 1
+	else
+		zoom.selected = 2
+	end
+
+	----- AUTO-ZOOM -----
+	label = ISLabel:new(splitpoint, y + self.addY, 20, getText("UI_optionscreen_autozoom"), 1, 1, 1, 1, UIFont.Small, false)
+	label:initialise()
+	self.mainPanel:addChild(label)
+	local autozoomTickBox = ISTickBox:new(splitpoint + 20, y + self.addY, 200, 20, "HELLO?", self, MainOptions.AutoZoomChange)
+	autozoomTickBox.choicesColor = {r=1, g=1, b=1, a=1}
+	autozoomTickBox:initialise();
+	for i = 1,4 do
+		autozoomTickBox:addOption(getText("UI_optionscreen_player"..i), nil)
+		if getCore():getAutoZoom(i-1) then
+			autozoomTickBox:setSelected(i, true)
+		end
+	end
+	self.mainPanel:addChild(autozoomTickBox)
+	self.mainPanel:insertNewLineOfButtons(autozoomTickBox)
+	self.addY = self.addY + autozoomTickBox:getHeight()
+
+	----- INVENTORY FONT -----
+	local invFont = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_inventory_font"), { getText("UI_optionscreen_Large"), getText("UI_optionscreen_Medium"), getText("UI_optionscreen_Small") }, 2, self, MainOptions.InventoryFontChange)
+	if getCore():getOptionInventoryFont() == "Large" then
+		invFont.selected = 1
+	elseif  getCore():getOptionInventoryFont() == "Small" then
+		invFont.selected = 3
+	else
+		invFont.selected = 2
+	end
+
+	----- CLOCK FORMAT -----
+	local clockFmt = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_clock_format"), { getText("UI_optionscreen_clock_month_day"), getText("UI_optionscreen_clock_day_month") }, getCore():getOptionClockFormat(), self, MainOptions.ClockFormatChange)
+
+	----- CLOCK 24-HOUR -----
+	local clock24 = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_clock_24_or_12"), { getText("UI_optionscreen_clock_24_hour"), getText("UI_optionscreen_clock_12_hour") }, getCore():getOptionClock24Hour() and 1 or 2, self, MainOptions.Clock24HourChange)
+
+	----- LANGUAGE -----
+    local availableLanguage = MainOptions.getAvailableLanguage();
+    local language = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_language"), availableLanguage, 1, self, MainOptions.LanguageChange);
+    language:setToolTipMap(MainOptions.doLanguageToolTip(availableLanguage));
+    language.selected = Translator.getLanguage():index() + 1;
+
+	self.mainPanel:setScrollHeight(y + self.addY + 20)
+
+	-----------------
+	----- SOUND -----
+	-----------------
+	self:addPage(getText("UI_optionscreen_audio"))
+	y = 20;
+	self.addY = 0
+
+	----- Sound VOLUME -----
+	local volume = getCore():getOptionSoundVolume()
+	volume = math.min(10, math.max(0, volume))
+	local combo = self:addVolumeControl(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_sound_volume"), volume, self, MainOptions.ChangeSoundVolume)
+
+	----- MUSIC VOLUME -----
+	local volume = getCore():getOptionMusicVolume()
+	volume = math.min(10, math.max(0, volume))
+	local combo = self:addVolumeControl(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_music_volume"), volume, self, MainOptions.ChangeMusicVolume)
+
+	----- MUSIC LIBRARY -----
+	local library = getCore():getOptionMusicLibrary()
+	library = math.min(3, math.max(1, library))
+	local combo = self:addCombo(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_music_library"), { getText("UI_optionscreen_music_library_1"), getText("UI_optionscreen_music_library_2"), getText("UI_optionscreen_music_library_3")}, library, self, MainOptions.ChangeMusicLibrary)
+
+	----- CURRENT MUSIC -----
+	local musicLbl = ISLabel:new(splitpoint, y + self.addY, 20, getText("UI_optionscreen_music_track1"), 1, 1, 1, 1, UIFont.Small, false);
+--	musicLbl:setAnchorRight(true)
+	musicLbl:initialise();
+	self.mainPanel:addChild(musicLbl);
+	
+	self.currentMusicLabel = ISLabel:new(splitpoint + 20, y + self.addY, 20, "", 1, 1, 1, 1, UIFont.Small, true);
+	self.currentMusicLabel:initialise();
+	self.mainPanel:addChild(self.currentMusicLabel);
+	self.addY = self.addY + 26
+
+	----- HEARTBEAT VOLUME -----
+	local volume = getCore():getOptionHeartVolume()
+	volume = math.min(10, math.max(0, volume))
+	local combo = self:addVolumeControl(splitpoint, y, comboWidth, 20, getText("UI_optionscreen_heart_volume"), volume, self, MainOptions.ChangeHeartVolume)
+	combo.tooltip = getText("UI_optionscreen_heart_volume_tt");
+
+    y = y + self.addY;
+
+--    local label = ISLabel:new(splitpoint - 1, y, 20, "Mods folder", 1, 1, 1, 1, UIFont.Small, false);
+--    label:initialise();
+--    self.mainPanel:addChild(label);
+--
+--    self.modSaveTxt = ISTextEntryBox:new(getCore():getSaveFolder(), splitpoint + 20, y, self:getWidth()-splitpoint - 240, 20);
+--    self.modSaveTxt:initialise();
+--    self.modSaveTxt:instantiate();
+--    self.modSaveTxt:setAnchorLeft(true);
+--    self.modSaveTxt:setAnchorRight(true);
+--    self.modSaveTxt:setAnchorTop(true);
+--    self.modSaveTxt:setAnchorBottom(false);
+--    self.mainPanel:addChild(self.modSaveTxt);
+
+	MainOptions.loadKeys();
+	--
+	self:addPage(getText("UI_optionscreen_keybinding"))
+	y = 5;
+
+	local keyTextElement = nil;
+	local x = MainOptions.keyBindingLength + 30;
+	local left = true;
+	for i,v in ipairs(MainOptions.keys) do
+		keyTextElement = {};
+
+		if luautils.stringStarts(v.value, "[") then
+			y = y + 15;
+			if not left then
+				y = y + 20;
+				left = true
+			end
+			local label = ISLabel:new(100, y, 30, getText("UI_optionscreen_binding_" .. v.value:gsub("%[", ""):gsub("%]", "")), 1, 1, 1, 1, UIFont.Medium);
+			label:setX(50);
+			label:initialise();
+			label:setAnchorRight(true);
+			self.mainPanel:addChild(label);
+
+			keyTextElement.value = v.value;
+			table.insert(MainOptions.keyText, keyTextElement);
+
+			x = MainOptions.keyBindingLength + 30;
+			y = y + 35;
+		else
+
+--            print("UI_optionscreen_binding_" .. v.value .. " = \" " .. v.value .. "\",");
+			local splitpoint = self:getWidth() / 2 ;
+			local label = ISLabel:new(x, y, 20, v.value, 1, 1, 1, 1, UIFont.Small);
+			label:initialise();
+			label:setAnchorLeft(false)
+			label:setAnchorRight(true);
+            label:setTranslation(getText("UI_optionscreen_binding_" .. v.value));
+			self.mainPanel:addChild(label);
+
+			local btn = ISButton:new(x + 10, y + 2, 120, 18, Keyboard.getKeyName(tonumber(v.key)), self, MainOptions.onKeyBindingBtnPress);
+			btn.internal = v.value;
+			btn:initialise();
+			btn:instantiate();
+--~ 			btn:setAnchorRight(true);
+			self.mainPanel:addChild(btn);
+
+			keyTextElement.txt = label;
+			keyTextElement.btn = btn;
+			keyTextElement.left = left
+			table.insert(MainOptions.keyText, keyTextElement);
+
+			if x > MainOptions.keyBindingLength + 30 then
+				x = MainOptions.keyBindingLength + 30;
+				y = y + 20;
+				left = true;
+			else
+				x = splitpoint + MainOptions.keyBindingLength + 30;
+				left = false;
+			end
+		end
+	end
+	self.mainPanel:setScrollHeight(y + 50);
+
+	----- CONTROLLER -----
+	self:addPage(getText("UI_optionscreen_controller"))
+	y = 20;
+	x = self.width / 3
+	
+	label = ISLabel:new(x, y, 20, getText("UI_optionscreen_controller_tip"), 1, 1, 1, 1, UIFont.Small, true)
+	label:initialise()
+	self.mainPanel:addChild(label)
+
+    local controllerTickBox = ISTickBox:new(x + 20, label:getY() + label:getHeight() + 10, 200, 20, "HELLO?", self, MainOptions.ControllerChange)
+    controllerTickBox.choicesColor = {r=1, g=1, b=1, a=1}
+    controllerTickBox:initialise();
+	self.mainPanel:insertNewLineOfButtons(controllerTickBox)
+    self.mainPanel:addChild(controllerTickBox)
+	for i = 0, getControllerCount()-1 do
+		local name = getControllerName(i)
+		controllerTickBox:addOption(name, nil)
+		if getCore():getOptionActiveController(name) then
+			controllerTickBox:setSelected(i + 1, true)
+		end
+	end
+    y = controllerTickBox:getY() + controllerTickBox:getHeight()
+
+	local btn = ISButton:new(x, y + 10, 120, 18, getText("UI_optionscreen_controller_reload"), self, MainOptions.ControllerReload)
+	btn:initialise()
+	btn:instantiate()
+	self.mainPanel:insertNewLineOfButtons(btn)
+	self.mainPanel:addChild(btn)
+
+    ----- RELOADING -----
+	self:addPage(getText("UI_optionscreen_reloading"))
+	y = 20;
+
+	self.addY = 0
+    local difficulties = {"forced by server!"}--{getText("UI_optionscreen_easy"), getText("UI_optionscreen_normal"), getText("UI_optionscreen_hardcore")};--> Stormy
+	MainOptions.reloadLabel = ISLabel:new(self.width / 3 - 150, y, 20, '', 1, 1, 1, 1, UIFont.Small);--> Stormy
+	self.mainPanel:addChild(MainOptions.reloadLabel);--> Stormy
+	local difficultyCombo = self:addCombo(splitpoint, y + 50, comboWidth, 20, getText("UI_optionscreen_reloadDifficulty"), difficulties, getCore():getOptionReloadDifficulty(), self, MainOptions.DifficultyChange);--> Stormy
+	MainOptions.reloadLabel.name = ReloadManager[1]:getDifficultyDescription(difficultyCombo.selected):gsub("\\n", "\n");--> Stormy
+
+	----- RACKING PROGRESS -----
+	local showRack = getCore():getOptionRackProgress()
+	local combo = self:addCombo(splitpoint, y + 50, comboWidth, 20, getText("UI_optionscreen_rack_progress"), {getText("UI_Yes"), getText("UI_No")}, showRack and 1 or 2, self, MainOptions.ChangeRackProgress)
+	local map = {};
+	map["defaultTooltip"] = getText("UI_optionscreen_rack_progress_tt");
+	combo:setToolTipMap(map);
+
+
+--    local rect = ISRect:new(30, y + 22, self:getWidth() - 60, 1, 1, 0.3, 0.3, 0.3);
+--    rect:initialise();
+--    rect:setAnchorRight(true);
+--    self.mainPanel:addChild(rect);
+
+   -- local joypad = {"Yes", "No"};--> Stormy
+   -- local joypadCombo = self:addCombo(splitpoint, y - 60, self:getWidth()-splitpoint - 100, 20, "Joypad", joypad, 2, self, MainOptions.JoypadChange);--> Stormy
+
+	self:setVisible(false);
+
+end
+
+function MainOptions.sortModes(a, b)
+	-- Need to handle the (RECOMMENED) string here
+	local ax, ay = string.match(a, '(%d+) x (%d+)')
+	local bx, by = string.match(b, '(%d+) x (%d+)')
+	ax = tonumber(ax)
+	ay = tonumber(ay)
+	bx = tonumber(bx)
+	by = tonumber(by)
+	if ax < bx then return true end
+	if ax > bx then return false end
+	return ay < by
+end
+
+function MainOptions:onMouseWheel(del)
+	local panel = self.tabs:getActiveView()
+	panel:setYScroll(panel:getYScroll() - (del * 40));
+	return true;
+end
+
+
+function MainOptions.loadKeys()
+	getCore():reinitKeyMaps()
+	MainOptions.keys = {}
+	MainOptions.keyBindingLength = 0
+	local knownKeys = {}
+	-- keyBinding comes from keyBinding.lua
+	for i=1, #keyBinding do
+		bind = {}
+		bind.key = keyBinding[i].key
+		bind.value = keyBinding[i].value
+		table.insert(MainOptions.keys, bind)
+		if not luautils.stringStarts(keyBinding[i].value, "[") then
+			-- we add the key binding to the core (java side), so the game will know the key
+			getCore():addKeyBinding(bind.value, tonumber(bind.key))
+			if getTextManager():MeasureStringX(UIFont.Small, bind.value) > MainOptions.keyBindingLength then
+				MainOptions.keyBindingLength = getTextManager():MeasureStringX(UIFont.Small, bind.value)
+			end
+			knownKeys[bind.value] = bind
+		end
+	end
+
+	-- the true boolean is to create the file is it doesn't exist
+	local keyFile = getFileReader("keys.ini", true);
+	-- we fetch our file to bind our keys (load the file)
+	local line = nil;
+	-- we read each line of our file
+	while true do
+		line = keyFile:readLine();
+		if line == nil then
+			keyFile:close();
+			break;
+		end
+		if not luautils.stringStarts(line, "[") then
+			local splitedLine = string.split(line, "=")
+			local name = splitedLine[1]
+			local key = tonumber(splitedLine[2])
+			-- ignore obsolete bindings, override the default key
+			if knownKeys[name] then
+				knownKeys[name].key = key
+				getCore():addKeyBinding(name, key)
+			end
+		end
+	end
+end
+
+function MainOptions:prerender()
+	ISPanelJoypad.prerender(self);
+
+--	self.mainPanel:setY(self:getYScroll());
+--~ 	self.mainPanel:setStencilRect(0,self:getYScroll() + self.mainPanel:getY(),600,300);
+--~ 	self:drawRect(0, -self.mainPanel:getYScroll(), self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b);
+--~ 	self.mainPanel:setY(self.mainPanel:getYScroll());
+--~ 	self:drawTextCentre("GAME OPTIONS", self.width / 2, 10, 1, 1, 1, 1, UIFont.Large);
+--~ 	self:drawText("Display", 30, 60, 1, 1, 1, 1, UIFont.Medium);
+--~ 	self:drawRect(30, 80, self.width - 60, 1, 1, 1, 1, 1);
+--~ 	self:drawText("Key Bindings", 30, 180, 1, 1, 1, 1, UIFont.Medium);
+--~ 	self:drawRect(30, 200, self.width - 60, 1, 1, 1, 1, 1);
+--~ 	self:drawText("Reloading", 30, 600, 1, 1, 1, 1, UIFont.Medium); --> Stormy
+--~ 	self:drawRect(30, 620, self.width - 60, 1, 1, 1, 1, 1); --> Stormy
+
+end
+
+function MainOptions:render()
+	-- render the change key binding rect
+	if MainOptions.keyPress then
+		self:drawRect(0, -self:getYScroll(), self.width, self.height, 0.18, 1, 1, 1);
+		self:drawTextCentre(getText("UI_optionscreen_pressKeyToBind", MainOptions.keyPress), self.width / 2, (self.height / 2) + (-self:getYScroll()), 1, 1, 1, 1, UIFont.Large);
+	end
+	-- if we got an error on the key pressed
+	if MainOptions.alreadySetKeyName then
+		self:drawTextCentre(getText("UI_optionscreen_keyAlreadyBinded", MainOptions.alreadySetKeyValue, MainOptions.alreadySetKeyName), self.width / 2, (self.height / 2) + 20 + (-self:getYScroll()), 1, 0, 0, 1, UIFont.Large);
+    end
+	--self.mainPanel:clearStencilRect();
+
+	local currentMusic = getSoundManager():getCurrentMusicName()
+	if currentMusic then
+		local library
+		if getSoundManager():getCurrentMusicLibrary() == "official" then
+			library = getText("UI_optionscreen_music_library_1")
+		else
+			library = getText("UI_optionscreen_music_library_2")
+		end
+		-- TODO: translate filename to full title once Zach names them
+		self.currentMusicLabel.name = getText("UI_optionscreen_music_track2", currentMusic:gsub('.ogg', ''), library)
+	else
+		self.currentMusicLabel.name = ''
+	end
+end
+
+function MainOptions:onKeyBindingBtnPress(button, x, y)
+	MainOptions.keyPress = button.internal;
+end
+
+function MainOptions:onOptionMouseDown(button, x, y)
+	-- if we back we gonna reinit all our key binding
+	if button.internal == "BACK" then
+
+		MainOptions.loadKeys();
+		for o,l in ipairs(MainOptions.keyText) do
+			-- text
+			if not l.value then
+				l.btn:setTitle(Keyboard.getKeyName(tonumber(MainOptions.keys[o].key)));
+			end
+		end
+
+		self:setVisible(false);
+		MainScreen.instance.bottomPanel:setVisible(true);
+		if self.joyfocus then
+			self.joyfocus.focus = MainScreen.instance;
+			updateJoypadFocus(self.joyfocus);
+		end
+	elseif button.internal == "SAVE" then
+		-- we erase our previous file (by setting the append boolean to false);
+		getCore():reinitKeyMaps();
+
+		local fileOutput = getFileWriter("keys.ini", true, false);
+		for i,v in ipairs(MainOptions.keyText) do
+			-- if it's a label (like [Player Controls])
+			if v.value then
+				fileOutput:write(v.value .. "\r\n");
+			else
+				fileOutput:write(v.txt:getName() .. "=" .. Keyboard.getKeyIndex(v.btn:getTitle()) .. "\r\n");
+				getCore():addKeyBinding(v.txt:getName(), tonumber(Keyboard.getKeyIndex(v.btn:getTitle())));
+			end
+		end
+		fileOutput:close();
+		self:setVisible(false);
+		MainScreen.instance.bottomPanel:setVisible(true);
+		if self.joyfocus then
+			self.joyfocus.focus = MainScreen.instance;
+			updateJoypadFocus(self.joyfocus);
+		end
+--        getCore():setSaveFolder(self.modSaveTxt:getText());
+		getCore():saveOptions();
+	end
+end
+
+function MainOptions.keyPressHandler(key)
+	if key == 1 then-- if pressed escape, we cancel key binding
+		MainOptions.keyPress = nil;
+		MainOptions.alreadySetKeyName = nil;
+	end
+	if MainOptions.keyPress and key > 0 then
+		MainOptions.alreadySetKeyName = nil;
+		MainOptions.alreadySetKeyValue = nil;
+		local keyBinded = nil;
+		local error = false;
+		for i,v in ipairs(MainOptions.keyText) do
+			-- we ignore label (like [Player Control])
+			if not v.value then
+				if v.txt:getName() == MainOptions.keyPress then -- get our current btn pressed
+					keyBinded = v.btn;
+				elseif Keyboard.getKeyName(key) == v.btn:getTitle() then -- if the key you pressed is the same as another
+					MainOptions.alreadySetKeyName = v.txt:getName();
+					MainOptions.alreadySetKeyValue = v.btn:getTitle();
+					error = true;
+					break;
+				end
+			end
+		end
+		if not error then
+			keyBinded:setTitle(Keyboard.getKeyName(key));
+			MainOptions.keyPress = nil;
+		end
+	end
+end
+
+function MainOptions.doLanguageToolTip(languages)
+	local tooltipLanguages = {};
+	for i,v in pairs(languages) do
+		if v == "Francais" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE> " .. getText("UI_optionscreen_translatedBy") .. " : Bret, Legumanigo, Peanuts, Marmotte971, Nyoshi, CareBearCorpse";
+		elseif v == "Deutsch" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : RoboMat, Lakorta, Dahugo, Addy, Tuto, Houy Gaming";
+		elseif v == "Russian" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Lev Ivanov, lordixi, Adapt, ArionWT, Konrad Knox";
+		elseif v == "Norsk" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Hans Morgenstierne";
+		elseif v == "Espanol (ES)" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : RetardedUser, Kalamar, Danny-Dynamita, Pagoru, ditoseadio";
+		elseif v == "Italiano" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Simone \"fox\" Volpini, Mattia \"d00de\" Geretti";
+		elseif v == "Polish" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : adios_1984, Lord_Venom, Szary_Optymista, Krzysztof \"Geras\" Klaja";
+		elseif v == "Nederlands" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Massivekills (Kevin Heuvink), Raymundo46";
+		elseif v == "Afrikaans" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : PsychoEliteNZ (Adrian Jansen), Viceroy (Stephanus Siebrits Cilliers van Zyl)";
+		elseif v == "Czech" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Jiri \"Rsa Viper\" Prochazka";
+		elseif v == "Danish" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : A. Gade";
+		elseif v == "Portuguese" then
+			tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Penedus";
+        elseif v == "Turkish" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : GriReis";
+        elseif v == "Hungarian" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : sandor.baliko";
+        elseif v == "Japanese" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : UENO \"Katzengarten\" Masahiro, Koichi \"Falcon33jp\" Takebe";
+        elseif v == "Korean" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : clarke, daden, djcide(tannoy), ingyer, yoongoon, zepaedori ";
+        elseif v == "Brazilian Portuguese" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : edusaraiva (Eduardo Saraiva)";
+        elseif v == "Simplified Chinese" then
+            tooltipLanguages[v] = getText("UI_optionscreen_needreboot") .. " <LINE>  " .. getText("UI_optionscreen_translatedBy") .. " : Sky_Orc_Mm";
+        end
+	end
+	return tooltipLanguages;
+end
+
+function MainOptions.getAvailableLanguage()
+	local result = {};
+	for i=0, Translator.getAvailableLanguage():size()-1 do
+		table.insert(result, Translator.getAvailableLanguage():get(i):text());
+	end
+	return result;
+end
+
+function MainOptions:onResolutionChange(oldw, oldh, neww, newh)
+	local splitPoint = self:getWidth() / 2
+	for _,keyTextElement in ipairs(MainOptions.keyText) do
+		if keyTextElement.txt then
+			local x = MainOptions.keyBindingLength + 30
+			if not keyTextElement.left then
+				x = x + splitPoint
+			end
+			keyTextElement.txt:setX(x - keyTextElement.txt.width)
+			keyTextElement.btn:setX(x + 10)
+		end
+	end
+end
+
+function MainOptions:onGainJoypadFocus(joypadData)
+	ISPanelJoypad.onGainJoypadFocus(self, joypadData)
+	local panel = self.tabs:getActiveView()
+	joypadData.focus = panel
+	updateJoypadFocus(joypadData)
+MainOptions.instance = self
+end
+
+function MainOptions:onGainJoypadFocusCurrentTab(joypadData)
+	ISPanelJoypad.onGainJoypadFocus(self, joypadData)
+	self:setISButtonForX(MainOptions.instance.saveButton)
+	self:setISButtonForB(MainOptions.instance.backButton)
+	if self.joypadIndexY == 0 then
+		if #self.joypadButtonsY > 0 then
+			self.joypadIndex = 1
+			self.joypadIndexY = 1
+			self.joypadButtons = self.joypadButtonsY[self.joypadIndexY]
+			if self.joypadIndex > #self.joypadButtons then
+				self.joypadIndex = #self.joypadButtons
+			end
+			self.joypadButtons[self.joypadIndex]:setJoypadFocused(true, joypadData)
+		end
+	end
+end
+
+function MainOptions:onJoypadDownCurrentTab(button, joypadData)
+	if button == Joypad.LBumper or button == Joypad.RBumper then
+		if ISComboBox.SharedPopup and UIManager.getUI():contains(ISComboBox.SharedPopup.javaObject) then return end -- hack
+		local viewIndex = self.parent:getActiveViewIndex()
+		if button == Joypad.LBumper then
+			if viewIndex == 1 then
+				viewIndex = #self.parent.viewList
+			else
+				viewIndex = viewIndex - 1
+			end
+		elseif button == Joypad.RBumper then
+			if viewIndex == #self.parent.viewList then
+				viewIndex = 1
+			else
+				viewIndex = viewIndex + 1
+			end
+		end
+		self.parent:activateView(self.parent.viewList[viewIndex].name)
+--		self.parent:getActiveView().joypadData = joypadData
+		joypadData.focus = self.parent:getActiveView()
+		updateJoypadFocus(joypadData)
+	else
+		ISPanelJoypad.onJoypadDown(self, button, joypadData)
+	end
+end
+
+function MainOptions:new (x, y, width, height)
+	local o = {}
+	--o.data = {}
+	o = ISPanelJoypad:new(x, y, width, height);
+	setmetatable(o, self)
+	self.__index = self
+	o.x = x;
+	o.y = y;
+	o.backgroundColor = {r=0, g=0, b=0, a=0.3};
+	o.borderColor = {r=1, g=1, b=1, a=0.2};
+	o.width = width;
+	o.height = height;
+	o.anchorLeft = true;
+	o.anchorRight = false;
+	o.anchorTop = true;
+	o.anchorBottom = false;
+	o.addY = 0;
+	MainOptions.instance = o;
+	return o
+end
+
+Events.OnKeyPressed.Add(MainOptions.keyPressHandler);
+
+--Events.OnMainMenuEnter.Add(testWorldPanel);
