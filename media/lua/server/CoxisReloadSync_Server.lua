@@ -1,7 +1,7 @@
 --****************************************************
---**                    Dr_Cox1911					**
---**       			  CoxisReloadSync    			**
---**				www.project-zomboid.de			**
+--**                    Dr_Cox1911									**
+--**       				  	CoxisReloadSync								**
+--**							www.project-zomboid.de						**
 --****************************************************
 
 CoxisReloadSyncServer = {};
@@ -26,8 +26,6 @@ CoxisReloadSyncServer.init = function()
 	CoxisReloadSyncServer.module = CoxisReloadSyncServer.luanet.getModule("CoxisReloadSync", true);
 	LuaNet:getInstance().setDebug( true );
 	CoxisReloadSyncServer.module.addCommandHandler("reloadsetting", CoxisReloadSyncServer.sendReloadSetting);
-	--Events.OnClientCommand.Add(CoxisReloadSyncServer.OnClientCommand);
-
 end
 
 CoxisReloadSyncServer.sendReloadSetting = function(_player, _username)
@@ -76,4 +74,3 @@ CoxisReloadSyncServer.initMP = function()
 end
 
 Events.OnGameBoot.Add(CoxisReloadSyncServer.initMP)
--- Events.OnServerStarted.Add(CoxisReloadSyncServer.init);
