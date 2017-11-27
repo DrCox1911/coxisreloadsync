@@ -68,15 +68,18 @@ end
 -- **************************************************************************************
 -- CoxisReloadSyncClient: asking for the settings
 -- **************************************************************************************
-CoxisReloadSyncClient.askSettings = function(_player)
-	print("CoxisReloadSyncClient: asking the server for settings...")
-	--sendClientCommand('CoxisReloadSync', 'askSettings', CoxisReloadSyncClient.settings);
-	local player = _player;
-		if not player then
-			player = getPlayer();
-		end
-		CoxisReloadSyncClient.module.send("reloadsetting", player:getUsername());
-	print("CoxisReloadSyncClient: asked for settings")
+CoxisReloadSyncClient.askSettings = function(_tick)
+	if _tick >= 1 then
+		print("CoxisReloadSyncClient: asking the server for settings...")
+		--sendClientCommand('CoxisReloadSync', 'askSettings', CoxisReloadSyncClient.settings);
+		local player = _player;
+			if not player then
+				player = getPlayer();
+			end
+			CoxisReloadSyncClient.module.send("reloadsetting", player:getUsername());
+		print("CoxisReloadSyncClient: asked for settings")
+		Events.OnTick.Remove(CoxisReloadSyncClient.askSettings);
+	end
 end
 
 
@@ -123,4 +126,5 @@ end
 
 -- Events.OnGameStart.Add(CoxisReloadSyncClient.init);
 Events.OnConnected.Add(CoxisReloadSyncClient.initClient)
-Events.OnGameTimeLoaded.Add(CoxisReloadSyncClient.askSettings)
+Events.OnTick.Add(CoxisReloadSyncClient.askSettings)
+--Events.OnGameTimeLoaded.Add(CoxisReloadSyncClient.askSettings)
